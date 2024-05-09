@@ -3,6 +3,9 @@
 
 int main() {
     Application app(4);
-    app.tspBacktracking();
+    std::cout << "parse done";
+    std::cout.flush();
+   // app.tspBacktracking();
+    app.tspTriangular();
     return 0;
 }

@@ -17,10 +17,14 @@ public:
 
     Vertex(int c);
     int getCode() const;
-    float getLat() const;
-    float getLon() const;
+    double getLat() const;
+    double getLon() const;
     std::vector<Edge *> getAdj();
     bool isVisited() const;
+    Vertex *getPred() const;
+    double getKey() const;
+
+    //not used
     bool isProcessing() const;
     unsigned int getIndegree() const;
     double getDist() const;
@@ -28,9 +32,13 @@ public:
     std::vector<Edge *> getIncoming() const;
 
     void setCode(int code);
-    void setLat(float lat);
-    void setLon(float lon);
+    void setLat(double  lat);
+    void setLon(double lon);
     void setVisited(bool visited);
+    void setPred(Vertex *pred);
+    void setKey(double key);
+
+    //not used..
     void setProcesssing(bool processing);
     void setIndegree(unsigned int indegree);
     void setDist(double dist);
@@ -42,14 +50,21 @@ public:
     bool operator==(const Vertex& other) const {
         return (this->code == other.code);
     }
+    /*
+    bool operator<(const Vertex& other) const {
+        return (this->key == other.key);
+    }*/
 
 
 protected:
     int code;
-    float lat;
-    float lon;
+    double  lat;
+    double  lon;
     std::vector<Edge*> adj;
     bool visited = false;
+    Vertex* pred;
+    double key;
+    //not used till now
     bool processing = false;
     unsigned int indegree;
     double dist = 0;

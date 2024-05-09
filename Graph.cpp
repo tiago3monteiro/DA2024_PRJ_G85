@@ -75,11 +75,11 @@ std::vector<Edge *> Vertex::getIncoming() const {
     return this->incoming;
 }
 
-float Vertex::getLat() const {
+double Vertex::getLat() const {
     return lat;
 }
 
-float Vertex::getLon() const {
+double Vertex::getLon() const {
     return lon;
 }
 
@@ -118,12 +118,28 @@ void Vertex::deleteEdge(Edge *edge) {
     delete edge;
 }
 
-void Vertex::setLat(float lat) {
+void Vertex::setLat(double lat) {
     Vertex::lat = lat;
 }
 
-void Vertex::setLon(float lon) {
+void Vertex::setLon(double lon) {
     Vertex::lon = lon;
+}
+
+Vertex *Vertex::getPred() const {
+    return pred;
+}
+
+double Vertex::getKey() const {
+    return key;
+}
+
+void Vertex::setPred(Vertex *pred) {
+    Vertex::pred = pred;
+}
+
+void Vertex::setKey(double key) {
+    Vertex::key = key;
 }
 
 

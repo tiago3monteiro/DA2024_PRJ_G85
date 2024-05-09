@@ -14,14 +14,16 @@
 
 #include <cmath> // For math functions
 Application::Application(int i) {
-    std::array<std::string, 7> filenames = {
+    std::array<std::string, 8> filenames = {
             "../graphs/tourism.csv",
             "../graphs/stadiums.csv",
             "../graphs/shipping.csv",
             "../graphs/graph1/",
             "../graphs/graph2/",
             "../graphs/graph3/",
-            "../graphs/graph4-25/"
+            "../graphs/graph4-25/",
+            "../graphs/graph5-500/"
+
     };
     std::cout << i;
     //PARSE TOY GRAPHS:
@@ -179,9 +181,10 @@ void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, 
     }
 }
 //grafo 1 -> 1.14207e+06
-//execution time 96milissegundos
-//grafo 2 -> 529203
-//execution time -> 585803 96milissegundos
+//execution time 96 milliseconds
+
+//grafo 2 -> 529 203/528 965/2.05874e+06
+//execution time -> 585803/492615/2091 milliseconds -> 8.21 minutes
 //T2.2 .................................................................................................
 void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial on the size of G
 
@@ -197,7 +200,14 @@ void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial 
     for (size_t i = 0; i < tspTour.size(); i++) {
         int current = tspTour[i];
         int next = tspTour[(i + 1) % tspTour.size()]; // Wrap around to the beginning
-        totalCost += distanceMatrix[current][next];
+
+        if (distanceMatrix[current][next]  >= INT_MAX) {
+            Vertex* source = graph.findVertex(current);
+            Vertex* destiny = graph.findVertex(next);
+            auto distance = haversineDistance(  source, destiny);
+            totalCost += distance;
+        }
+        else totalCost += distanceMatrix[current][next];
     }
     std::cout << "Total Cost: " << totalCost << std::endl;
     //time count:
@@ -221,8 +231,8 @@ int Application::minKey(const std::vector<float>& key, const std::vector<bool>& 
 }
 
 void Application::primMST() {
-    int n = distanceMatrix.size(); //number of nodes
 
+    int n = distanceMatrix.size(); //number of nodes
     std::vector<bool> mstSet(n, false); //visited vertex
     std::vector<float> key(n, std::numeric_limits<float>::max());//lowest edge weight connecting v to a node in the Tree
     std::vector<int> parent(n, -1); //predecessor of v in the Tree
@@ -234,22 +244,13 @@ void Application::primMST() {
         mstSet[u] = true; //visit it
 
         for (int v = 0; v < n; v++) { // Check if node is not in MST, that exists a direct link between nodes and
-            // distance was reduced
 
-            if(distanceMatrix[u][v] >= INT_MAX) {//manually add distance
-                Vertex* source = graph.findVertex(u);
-                Vertex* destiny = graph.findVertex(v);
-                auto distance = haversineDistance(  source, destiny);
-                distanceMatrix[u][v] = distance;
-
-            }
             if (distanceMatrix[u][v] > 0 && !mstSet[v] && distanceMatrix[u][v] < key[v]) {
                 parent[v] = u; //update parent
                 key[v] = distanceMatrix[u][v]; //and change value of lowest edge weight connected to v
             }
         }
     }
-
     // Construct MST adjacency list for preorder traversal
     mst.resize(n);
     for (int v = 1; v < n; v++) {
@@ -297,4 +298,47 @@ double Application::haversineDistance(Vertex* v1, Vertex* v2) {
     // Distance in kilometers
     double distance = R * c;
     return distance;
+}
+
+void Application::HeldKarp() {
+    int n = graph.getVertexSet().size();
+    std::vector<std::vector<float>> distance(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
+
+    // Calculate distances between all pairs of nodes
+    for (auto v1 : graph.getVertexSet()) {
+        for (auto v2 : graph.getVertexSet()) {
+            int i = v1->getCode();
+            int j = v2->getCode();
+            distance[i][j] = haversineDistance(v1, v2);
+        }
+    }
+
+    // Memoization table for DP
+    std::vector<std::vector<float>> dp(1 << n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
+
+    // Initialize base case
+    dp[1][0] = 0; // Starting point at node 0
+
+    // Dynamic programming to fill the dp table
+    for (int mask = 1; mask < (1 << n); mask++) {
+        for (int i = 0; i < n; i++) {
+            if (mask & (1 << i)) {
+                int prevMask = mask & ~(1 << i);
+                for (int j = 0; j < n; j++) {
+                    if (prevMask & (1 << j)) {
+                        dp[mask][i] = std::min(dp[mask][i], dp[prevMask][j] + distance[j][i]);
+                    }
+                }
+            }
+        }
+    }
+
+    // Find the minimum tour cost
+    float minTourCost = std::numeric_limits<float>::infinity();
+    for (int i = 1; i < n; i++) {
+        minTourCost = std::min(minTourCost, dp[(1 << n) - 1][i] + distance[i][0]);
+    }
+
+    // Output the result
+    std::cout << "Optimal TSP Tour Cost: " << minTourCost << std::endl;
 }

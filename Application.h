@@ -15,7 +15,6 @@ public:
     Application(int i);
     void tspBacktracking();
     void tspTriangular();
-    void HeldKarp();
 
 private:
     Graph graph;
@@ -27,8 +26,6 @@ private:
     void primMST();
     void preorderTraversal(int root , std::vector<bool> &visited);
     int minKey(const std::vector<float> &key, const std::vector<bool> &mstSet);
-
-
     double haversineDistance(Vertex *v1, Vertex *v2);
 };
 

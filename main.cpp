@@ -2,10 +2,10 @@
 #include "Application.h"
 
 int main() {
-    Application app(4);
+    Application app(8);
     std::cout << "parse done";
     std::cout.flush();
-   // app.tspBacktracking();
+    //app.tspBacktracking();
     app.tspTriangular();
     return 0;
 }

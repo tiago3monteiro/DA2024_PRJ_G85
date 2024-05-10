@@ -15,10 +15,15 @@ public:
     Application(int i);
     void tspBacktracking();
     void tspTriangular();
+    void tspNearestNeighbor();
+    void tspChirstofides();
 
 private:
     Graph graph;
     std::vector<std::vector<float>> distanceMatrix;
+    std::vector<std::vector<bool>> visited; // Matrix to track visited edges
+
+
     std::vector<std::vector<int>> mst; // To store the MST as adjacency list
     std::vector<int> tspTour; // To store the TSP tour sequence
 
@@ -27,6 +32,10 @@ private:
     void preorderTraversal(int root , std::vector<bool> &visited);
     int minKey(const std::vector<float> &key, const std::vector<bool> &mstSet);
     double haversineDistance(Vertex *v1, Vertex *v2);
+
+    std::vector<int> minWeightPerfectMatching(const std::vector<int> &vertices);
+
+    void findEulerianCircuit(int u, std::vector<int> &circuit);
 };
 
 

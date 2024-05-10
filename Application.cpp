@@ -25,7 +25,6 @@ Application::Application(int i) {
             "../graphs/graph5-500/"
 
     };
-    std::cout << i;
     //PARSE TOY GRAPHS:
     if(i > 0 && i<4)
     {
@@ -96,6 +95,7 @@ Application::Application(int i) {
 
     //distance matrix:
     int n = graph.getVertexSet().size();
+    visited.resize(n, std::vector<bool>(n, false));
     distanceMatrix.assign(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
 
     for(auto vertex: graph.getVertexSet()) {
@@ -229,35 +229,45 @@ int Application::minKey(const std::vector<float>& key, const std::vector<bool>& 
 
     return min_index;
 }
-
 void Application::primMST() {
-
-    int n = distanceMatrix.size(); //number of nodes
-    std::vector<bool> mstSet(n, false); //visited vertex
-    std::vector<float> key(n, std::numeric_limits<float>::max());//lowest edge weight connecting v to a node in the Tree
-    std::vector<int> parent(n, -1); //predecessor of v in the Tree
+    int n = distanceMatrix.size(); // Number of nodes
+    std::vector<bool> mstSet(n, false); // Visited vertices
+    std::vector<float> key(n, std::numeric_limits<float>::max()); // Lowest edge weight connecting vertex to the MST
+    std::vector<int> parent(n, -1); // Predecessor of vertex in the MST
 
     key[0] = 0; // Start with vertex 0 as the root
 
+    // Construct the MST using Prim's algorithm
     for (int count = 0; count < n - 1; count++) {
-        int u = minKey(key, mstSet); //get the closest unprocessed node
-        mstSet[u] = true; //visit it
+        int u = minKey(key, mstSet); // Get the closest unprocessed node
+        mstSet[u] = true; // Mark vertex u as visited
 
-        for (int v = 0; v < n; v++) { // Check if node is not in MST, that exists a direct link between nodes and
-
+        // Update key values and parent pointers for adjacent vertices
+        for (int v = 0; v < n; v++) {
             if (distanceMatrix[u][v] > 0 && !mstSet[v] && distanceMatrix[u][v] < key[v]) {
-                parent[v] = u; //update parent
-                key[v] = distanceMatrix[u][v]; //and change value of lowest edge weight connected to v
+                parent[v] = u; // Update parent of vertex v
+                key[v] = distanceMatrix[u][v]; // Update the key value for vertex v
             }
         }
     }
+
+    // Calculate the total weight of the MST
+    float totalMSTWeight = 0.0f;
+    for (int i = 1; i < n; i++) {
+        totalMSTWeight += key[i]; // Sum up the key values (MST edge weights)
+    }
+
     // Construct MST adjacency list for preorder traversal
     mst.resize(n);
     for (int v = 1; v < n; v++) {
         mst[parent[v]].push_back(v);
         mst[v].push_back(parent[v]);
     }
+
+    // Print the total weight of the MST
+    std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;
 }
+
 
 void Application::preorderTraversal(int root, std::vector<bool>& visited) {
 
@@ -300,45 +310,168 @@ double Application::haversineDistance(Vertex* v1, Vertex* v2) {
     return distance;
 }
 
-void Application::HeldKarp() {
-    int n = graph.getVertexSet().size();
-    std::vector<std::vector<float>> distance(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
 
-    // Calculate distances between all pairs of nodes
-    for (auto v1 : graph.getVertexSet()) {
-        for (auto v2 : graph.getVertexSet()) {
-            int i = v1->getCode();
-            int j = v2->getCode();
-            distance[i][j] = haversineDistance(v1, v2);
+//5.50069e+06 units -> graph 2
+void Application::tspNearestNeighbor() {
+
+    auto start = std::chrono::steady_clock::now();
+    int n = distanceMatrix.size();
+    int visitedCount = 0;
+    Vertex* next;
+    Vertex* previous;
+    std::vector<bool> visited(n, false);
+    double totalDistance = 0.0;
+
+    // Start from the first vertex
+    Vertex* current = graph.findVertex(0);
+    current->setVisited(true);
+    visitedCount++;
+
+    while (visitedCount < n) { //lets visit all nodes:
+        bool pathExists = false;
+        double minDistance = std::numeric_limits<double>::max();
+
+        for(auto edge: current->getAdj()) { //check adjcent nodes to look for the best local choice
+            if(!edge->getDest()->isVisited() && edge->getCapacity() < minDistance) {
+                next = edge->getDest();
+                minDistance = edge->getCapacity();
+                pathExists = true; //exists at least one!
+            }
         }
-    }
 
-    // Memoization table for DP
-    std::vector<std::vector<float>> dp(1 << n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
-
-    // Initialize base case
-    dp[1][0] = 0; // Starting point at node 0
-
-    // Dynamic programming to fill the dp table
-    for (int mask = 1; mask < (1 << n); mask++) {
-        for (int i = 0; i < n; i++) {
-            if (mask & (1 << i)) {
-                int prevMask = mask & ~(1 << i);
-                for (int j = 0; j < n; j++) {
-                    if (prevMask & (1 << j)) {
-                        dp[mask][i] = std::min(dp[mask][i], dp[prevMask][j] + distance[j][i]);
+        if(!pathExists) {
+            for(auto vertex: graph.getVertexSet()) {
+                if(!vertex->isVisited()) {
+                    double capacity = haversineDistance(vertex,current);
+                    if(capacity < minDistance) {
+                        next = vertex;
+                        minDistance = capacity;
                     }
                 }
             }
         }
+        visitedCount++;
+        previous = current;
+        current = next;
+        current->setVisited(true);
+        totalDistance += minDistance;
     }
-
-    // Find the minimum tour cost
-    float minTourCost = std::numeric_limits<float>::infinity();
-    for (int i = 1; i < n; i++) {
-        minTourCost = std::min(minTourCost, dp[(1 << n) - 1][i] + distance[i][0]);
+    // Add the distance back to the starting vertex to complete the tour
+    bool path = false;
+    for(auto edge: current->getAdj()) {
+        if(edge->getDest()->getCode() == 0) {
+            totalDistance += edge->getCapacity();
+            path = true;
+        }
     }
+    if(!path)
+    totalDistance += haversineDistance(previous, graph.findVertex(0));
+    std::cout << "Total distance of TSP tour (Nearest Neighbor): " << totalDistance << " units" << std::endl;
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 
-    // Output the result
-    std::cout << "Optimal TSP Tour Cost: " << minTourCost << std::endl;
 }
+
+void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
+    for (int v : mst[u]) {
+        if (!visited[u][v]) {
+            visited[u][v] = visited[v][u] = true;
+            findEulerianCircuit(v, circuit);
+        }
+    }
+    circuit.push_back(u);
+}
+
+
+
+void Application::tspChirstofides() {
+    auto start = std::chrono::steady_clock::now();
+
+    // Step 1: Compute Minimum Spanning Tree (MST)
+    primMST();
+
+    // Step 2: Find Minimum Weight Perfect Matching of Odd-Degree Vertices
+    std::vector<int> oddVertices;
+    for (int i = 0; i < distanceMatrix.size(); ++i) {
+        if (mst[i].size() % 2 != 0) { // Check for odd degree vertices
+            oddVertices.push_back(i);
+        }
+    }
+
+    std::vector<int> matching(oddVertices.size(), -1); // Initialize matching array
+    std::vector<bool> used(oddVertices.size(), false); // Track used vertices in the matching
+
+    // Greedy matching by pairing adjacent odd vertices
+    for (int i = 0; i < oddVertices.size(); ++i) {
+        if (!used[i]) {
+            int closestIndex = -1;
+            double minDistance = std::numeric_limits<double>::max();
+
+            // Find the closest unmatched vertex
+            for (int j = i + 1; j < oddVertices.size(); ++j) {
+                if (!used[j]) {
+                    double distance = distanceMatrix[oddVertices[i]][oddVertices[j]];
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestIndex = j;
+                    }
+                }
+            }
+
+            // Pair the vertices
+            matching[i] = oddVertices[closestIndex];
+            matching[closestIndex] = oddVertices[i];
+            used[i] = true;
+            used[closestIndex] = true;
+        }
+    }
+
+    // Step 3: Incorporate the matching edges into the MST
+    for (int i = 0; i < oddVertices.size(); ++i) {
+        if (matching[i] != -1) {
+            int u = oddVertices[i];
+            int v = matching[i];
+            // Add the matching edges to the MST
+            mst[u].push_back(v);
+            mst[v].push_back(u);
+        }
+    }
+
+    // Step 4: Construct an Eulerian Circuit from the MST
+    std::vector<int> eulerianCircuit;
+    findEulerianCircuit(0, eulerianCircuit);
+
+    // Step 5: Convert the Eulerian Circuit into a Hamiltonian Circuit (TSP Tour)
+    std::vector<bool> visited(distanceMatrix.size(), false);
+    tspTour.clear();
+    for (int vertex : eulerianCircuit) {
+        if (!visited[vertex]) {
+            tspTour.push_back(vertex);
+            visited[vertex] = true;
+        }
+    }
+    tspTour.push_back(eulerianCircuit.front()); // Complete the Hamiltonian circuit
+
+    // Step 6: Calculate the total cost of the TSP Tour
+    float totalCost = 0.0f;
+    for (size_t i = 0; i < tspTour.size() - 1; ++i) {
+        int current = tspTour[i];
+        int next = tspTour[i + 1];
+        totalCost += distanceMatrix[current][next];
+    }
+
+    // Print the TSP Tour sequence and total cost
+    std::cout << "TSP Tour Sequence: ";
+    for (int vertex : tspTour) {
+        std::cout << vertex << " -> ";
+    }
+    std::cout << tspTour.front() << std::endl;
+    std::cout << "Total Cost: " << totalCost << std::endl;
+
+    // Measure execution time
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
+}
+

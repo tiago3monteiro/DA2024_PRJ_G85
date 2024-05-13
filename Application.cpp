@@ -80,7 +80,7 @@ Application::Application(int i) {
         std::ifstream in1(edges);
         std::getline(in1,line,'\n'); //remove first line
         while(std::getline(in1,line,'\n')) {
-            //std::cout << "line " << k << std::endl;
+            std::cout << "line " << k << std::endl;
             k++;
 
             std::istringstream iss1(line);
@@ -375,14 +375,12 @@ void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
     circuit.push_back(u);
 }
 
-
-
 void Application::tspChristofides() {
     auto start = std::chrono::steady_clock::now();
 
     // Step 1: Compute Minimum Spanning Tree (MST)
     primMST();
-
+    std::cout << "prim" << std::endl;
     // Step 2: Find Minimum Weight Perfect Matching of Odd-Degree Vertices
     std::vector<int> oddVertices;
     for (int i = 0; i < distanceMatrix.size(); ++i) {
@@ -410,7 +408,6 @@ void Application::tspChristofides() {
                     }
                 }
             }
-
             // Pair the vertices
             matching[i] = oddVertices[closestIndex];
             matching[closestIndex] = oddVertices[i];
@@ -418,7 +415,7 @@ void Application::tspChristofides() {
             used[closestIndex] = true;
         }
     }
-
+    std::cout << "matching" << std::endl;
     // Step 3: Incorporate the matching edges into the MST
     for (int i = 0; i < oddVertices.size(); ++i) {
         if (matching[i] != -1) {
@@ -429,7 +426,7 @@ void Application::tspChristofides() {
             mst[v].push_back(u);
         }
     }
-
+    std::cout << "eulerian" << std::endl;
     // Step 4: Construct an Eulerian Circuit from the MST
     std::vector<int> eulerianCircuit;
     findEulerianCircuit(0, eulerianCircuit);
@@ -444,13 +441,16 @@ void Application::tspChristofides() {
         }
     }
     tspTour.push_back(eulerianCircuit.front()); // Complete the Hamiltonian circuit
-
+    std::cout << "calculate" << std::endl;
     // Step 6: Calculate the total cost of the TSP Tour
     float totalCost = 0.0f;
     for (size_t i = 0; i < tspTour.size() - 1; ++i) {
         int current = tspTour[i];
         int next = tspTour[i + 1];
-        totalCost += distanceMatrix[current][next];
+        if(distanceMatrix[current][next] > INT_MAX) {
+            totalCost += haversineDistance(graph.findVertex(current),graph.findVertex(next));
+        }
+        else totalCost += distanceMatrix[current][next];
     }
 
 
@@ -463,13 +463,65 @@ void Application::tspChristofides() {
 }
 
 void Application::tspRealWorld(int source) {
-    Vertex* sourceVertex = graph.findVertex(source);
-    if(sourceVertex == nullptr) {
-        std::cout << "No vertex found!" << std::endl;
-        return;
+    // Check if the graph is Hamiltonian
+    std::vector<int> path;
+    path.push_back(source);
+    int count = 1;
+    if (hamiltonianUtil(source, path, visited[source], count)) {
+        std::cout << "Graph is Hamiltonian." << std::endl;
+        std::cout << "Hamiltonian Cycle: ";
+        for (int vertex : path) {
+            std::cout << vertex << " ";
+        }
+        std::cout << std::endl;
+    } else {
+        std::cout << "Graph is not Hamiltonian." << std::endl;
     }
-
-
-
 }
 
+bool Application::hamiltonianUtil(int v, std::vector<int>& path, std::vector<bool>& visited, int& count) {
+    // Base case: If all vertices are included in the path
+    if (count == distanceMatrix.size()) {
+        // Check if there's an edge from the last vertex in path to the starting vertex
+        int startVertex = path.front();
+        if (distanceMatrix[v][startVertex] > 0) {
+            path.push_back(startVertex);
+            return true; // Found a Hamiltonian cycle
+        }
+        return false;
+    }
+
+    // Try different vertices as the next candidate in the Hamiltonian path
+    for (int i = 0; i < distanceMatrix.size(); ++i) {
+        if (distanceMatrix[v][i] > 0 && !visited[i]) {
+            visited[i] = true;
+            path.push_back(i);
+            count++;
+
+            // Recursively check if this path leads to a Hamiltonian cycle
+            if (hamiltonianUtil(i, path, visited, count)) {
+                return true;
+            }
+
+            // Backtrack if the current vertex doesn't lead to a Hamiltonian cycle
+            visited[i] = false;
+            path.pop_back();
+            count--;
+        }
+    }
+
+    return false;
+}
+
+bool Application::isHamiltonian(const std::vector<int>& path) {
+    // A Hamiltonian cycle should contain all vertices exactly once and end at the starting vertex
+    if (path.size() != distanceMatrix.size() + 1) {
+        return false;
+    }
+
+    int startVertex = path.front();
+    int endVertex = path.back();
+
+    // Check if the last vertex has an edge to the start vertex to complete the cycle
+    return distanceMatrix[endVertex][startVertex] > 0;
+}

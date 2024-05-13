@@ -32,6 +32,10 @@ private:
     int minKey(const std::vector<float> &key, const std::vector<bool> &mstSet);
     double haversineDistance(Vertex *v1, Vertex *v2);
     void findEulerianCircuit(int u, std::vector<int> &circuit);
+
+    bool hamiltonianUtil(int v, std::vector<int> &path, std::vector<bool> &visited, int &count);
+
+    bool isHamiltonian(const std::vector<int> &path);
 };
 
 

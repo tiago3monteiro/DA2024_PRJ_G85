@@ -80,7 +80,7 @@ Application::Application(int i) {
         std::ifstream in1(edges);
         std::getline(in1,line,'\n'); //remove first line
         while(std::getline(in1,line,'\n')) {
-            std::cout << "line " << k << std::endl;
+            //std::cout << "line " << k << std::endl;
             k++;
 
             std::istringstream iss1(line);
@@ -110,15 +110,7 @@ Application::Application(int i) {
     }
     graph.setDistanceMatrix(distanceMatrix);
 
-    /*
-    std::cout << "Distance Matrix size:" << graph.getVertexSet().size() << std::endl;
-    for(auto i = 0; i < n; i++) {
-        for(auto j = 0; j<n;j++) {
-            std::cout << distanceMatrix[i][j]<< " ";
-        }
-        std::cout <<std::endl;
-    }
-    std::cout << "parsed";*/
+
 }
 //optimal solution:
 //2600 -tourism
@@ -385,7 +377,7 @@ void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
 
 
 
-void Application::tspChirstofides() {
+void Application::tspChristofides() {
     auto start = std::chrono::steady_clock::now();
 
     // Step 1: Compute Minimum Spanning Tree (MST)
@@ -461,17 +453,23 @@ void Application::tspChirstofides() {
         totalCost += distanceMatrix[current][next];
     }
 
-    // Print the TSP Tour sequence and total cost
-    std::cout << "TSP Tour Sequence: ";
-    for (int vertex : tspTour) {
-        std::cout << vertex << " -> ";
-    }
-    std::cout << tspTour.front() << std::endl;
+
     std::cout << "Total Cost: " << totalCost << std::endl;
 
     // Measure execution time
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
+}
+
+void Application::tspRealWorld(int source) {
+    Vertex* sourceVertex = graph.findVertex(source);
+    if(sourceVertex == nullptr) {
+        std::cout << "No vertex found!" << std::endl;
+        return;
+    }
+
+
+
 }
 

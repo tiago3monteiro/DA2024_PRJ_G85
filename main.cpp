@@ -1,13 +1,9 @@
 #include <iostream>
-#include "Application.h"
+#include "Menu.h"
 
 int main() {
-    Application app(8);
-    std::cout << "parse done"<<std::endl;
-    std::cout.flush();
-    //app.tspBacktracking();
-    app.tspTriangular();
-    app.tspNearestNeighbor();
-    app.tspChirstofides();
+    Menu menu;
+    while (menu.run());
+    std::cout << "PROGRAM ENDED";
     return 0;
 }

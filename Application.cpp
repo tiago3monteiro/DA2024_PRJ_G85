@@ -260,7 +260,6 @@ void Application::primMST() {
     std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;
 }
 
-
 void Application::preorderTraversal(int root, std::vector<bool>& visited) {
 
     if (!visited[root]) {
@@ -276,34 +275,7 @@ void Application::preorderTraversal(int root, std::vector<bool>& visited) {
 }
 
 
-
-double Application::haversineDistance(Vertex* v1, Vertex* v2) {
-    // Radius of the Earth in kilometers
-    constexpr float R = 6371.0;
-
-    // Convert latitude and longitude from degrees to radians
-    double lat1 = v1->getLat() * M_PI / 180.0;
-    double lon1 = v1->getLon() * M_PI / 180.0;
-    double lat2 = v2->getLat() * M_PI / 180.0;
-    double lon2 = v2->getLon() * M_PI / 180.0;
-
-    // Calculate differences in latitude and longitude
-    double dlat = lat2 - lat1;
-    double dlon = lon2 - lon1;
-
-    // Haversine formula to calculate distance
-    double a = sin(dlat / 2) * sin(dlat / 2) +
-               cos(lat1) * cos(lat2) *
-               sin(dlon / 2) * sin(dlon / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-
-    // Distance in kilometers
-    double distance = R * c;
-    return distance;
-}
-
-
-//5.50069e+06 units -> graph 2
+//T2.3 - NEAREST NEIGHBOR................................................................................................................
 void Application::tspNearestNeighbor() {
 
     auto start = std::chrono::steady_clock::now();
@@ -362,37 +334,25 @@ void Application::tspNearestNeighbor() {
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
-
 }
 
-void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
-    for (int v : mst[u]) {
-        if (!visited[u][v]) {
-            visited[u][v] = visited[v][u] = true;
-            findEulerianCircuit(v, circuit);
-        }
-    }
-    circuit.push_back(u);
-}
-
+//T2.3 - CHRISTOFIDES................................................................................................................
 void Application::tspChristofides() {
     auto start = std::chrono::steady_clock::now();
 
     // Step 1: Compute Minimum Spanning Tree (MST)
     primMST();
-    std::cout << "prim" << std::endl;
-    // Step 2: Find Minimum Weight Perfect Matching of Odd-Degree Vertices
+
+    // Step 2: Find Minimum Weight Perfect Matching of Odd-Degree Vertices (Not really perfect greedy algorithm)
     std::vector<int> oddVertices;
     for (int i = 0; i < distanceMatrix.size(); ++i) {
         if (mst[i].size() % 2 != 0) { // Check for odd degree vertices
             oddVertices.push_back(i);
         }
     }
-
     std::vector<int> matching(oddVertices.size(), -1); // Initialize matching array
     std::vector<bool> used(oddVertices.size(), false); // Track used vertices in the matching
 
-    // Greedy matching by pairing adjacent odd vertices
     for (int i = 0; i < oddVertices.size(); ++i) {
         if (!used[i]) {
             int closestIndex = -1;
@@ -415,7 +375,7 @@ void Application::tspChristofides() {
             used[closestIndex] = true;
         }
     }
-    std::cout << "matching" << std::endl;
+
     // Step 3: Incorporate the matching edges into the MST
     for (int i = 0; i < oddVertices.size(); ++i) {
         if (matching[i] != -1) {
@@ -426,7 +386,7 @@ void Application::tspChristofides() {
             mst[v].push_back(u);
         }
     }
-    std::cout << "eulerian" << std::endl;
+
     // Step 4: Construct an Eulerian Circuit from the MST
     std::vector<int> eulerianCircuit;
     findEulerianCircuit(0, eulerianCircuit);
@@ -440,88 +400,61 @@ void Application::tspChristofides() {
             visited[vertex] = true;
         }
     }
+
     tspTour.push_back(eulerianCircuit.front()); // Complete the Hamiltonian circuit
-    std::cout << "calculate" << std::endl;
+
     // Step 6: Calculate the total cost of the TSP Tour
     float totalCost = 0.0f;
     for (size_t i = 0; i < tspTour.size() - 1; ++i) {
         int current = tspTour[i];
         int next = tspTour[i + 1];
-        if(distanceMatrix[current][next] > INT_MAX) {
+        if(distanceMatrix[current][next] > INT_MAX)
             totalCost += haversineDistance(graph.findVertex(current),graph.findVertex(next));
-        }
+
         else totalCost += distanceMatrix[current][next];
     }
 
-
     std::cout << "Total Cost: " << totalCost << std::endl;
-
-    // Measure execution time
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 }
 
+void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
+    for (int v : mst[u]) {
+        if (!visited[u][v]) {
+            visited[u][v] = visited[v][u] = true;
+            findEulerianCircuit(v, circuit);
+        }
+    }
+    circuit.push_back(u);
+}
+//T2.4................................................................................................................
 void Application::tspRealWorld(int source) {
-    // Check if the graph is Hamiltonian
-    std::vector<int> path;
-    path.push_back(source);
-    int count = 1;
-    if (hamiltonianUtil(source, path, visited[source], count)) {
-        std::cout << "Graph is Hamiltonian." << std::endl;
-        std::cout << "Hamiltonian Cycle: ";
-        for (int vertex : path) {
-            std::cout << vertex << " ";
-        }
-        std::cout << std::endl;
-    } else {
-        std::cout << "Graph is not Hamiltonian." << std::endl;
-    }
+
 }
 
-bool Application::hamiltonianUtil(int v, std::vector<int>& path, std::vector<bool>& visited, int& count) {
-    // Base case: If all vertices are included in the path
-    if (count == distanceMatrix.size()) {
-        // Check if there's an edge from the last vertex in path to the starting vertex
-        int startVertex = path.front();
-        if (distanceMatrix[v][startVertex] > 0) {
-            path.push_back(startVertex);
-            return true; // Found a Hamiltonian cycle
-        }
-        return false;
-    }
+double Application::haversineDistance(Vertex* v1, Vertex* v2) {
+    // Radius of the Earth in kilometers
+    constexpr float R = 6371.0;
 
-    // Try different vertices as the next candidate in the Hamiltonian path
-    for (int i = 0; i < distanceMatrix.size(); ++i) {
-        if (distanceMatrix[v][i] > 0 && !visited[i]) {
-            visited[i] = true;
-            path.push_back(i);
-            count++;
+    // Convert latitude and longitude from degrees to radians
+    double lat1 = v1->getLat() * M_PI / 180.0;
+    double lon1 = v1->getLon() * M_PI / 180.0;
+    double lat2 = v2->getLat() * M_PI / 180.0;
+    double lon2 = v2->getLon() * M_PI / 180.0;
 
-            // Recursively check if this path leads to a Hamiltonian cycle
-            if (hamiltonianUtil(i, path, visited, count)) {
-                return true;
-            }
+    // Calculate differences in latitude and longitude
+    double dlat = lat2 - lat1;
+    double dlon = lon2 - lon1;
 
-            // Backtrack if the current vertex doesn't lead to a Hamiltonian cycle
-            visited[i] = false;
-            path.pop_back();
-            count--;
-        }
-    }
+    // Haversine formula to calculate distance
+    double a = sin(dlat / 2) * sin(dlat / 2) +
+               cos(lat1) * cos(lat2) *
+               sin(dlon / 2) * sin(dlon / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
-    return false;
-}
-
-bool Application::isHamiltonian(const std::vector<int>& path) {
-    // A Hamiltonian cycle should contain all vertices exactly once and end at the starting vertex
-    if (path.size() != distanceMatrix.size() + 1) {
-        return false;
-    }
-
-    int startVertex = path.front();
-    int endVertex = path.back();
-
-    // Check if the last vertex has an edge to the start vertex to complete the cycle
-    return distanceMatrix[endVertex][startVertex] > 0;
+    // Distance in kilometers
+    double distance = R * c;
+    return distance;
 }

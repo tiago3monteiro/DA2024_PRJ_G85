@@ -29,13 +29,10 @@ private:
     void tspBacktrackingAux(int currPos, int n, int count, float cost, float &ans); //auxiliar function for backtracking
     void primMST();
     void preorderTraversal(int root , std::vector<bool> &visited);
-    int minKey(const std::vector<float> &key, const std::vector<bool> &mstSet);
     double haversineDistance(Vertex *v1, Vertex *v2);
     void findEulerianCircuit(int u, std::vector<int> &circuit);
+    void resetGraph();
 
-    bool hamiltonianUtil(int v, std::vector<int> &path, std::vector<bool> &visited, int &count);
-
-    bool isHamiltonian(const std::vector<int> &path);
 };
 
 

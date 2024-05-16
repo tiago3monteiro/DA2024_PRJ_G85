@@ -112,10 +112,38 @@ Application::Application(int i) {
 
 
 }
-//optimal solution:
-//2600 -tourism
-//86.7 - shipping
-//341 - stadiums
+
+void Application::resetGraph() {
+    for(auto vertex: graph.getVertexSet()) {
+        vertex->setVisited(false);
+    }
+}
+double Application::haversineDistance(Vertex* v1, Vertex* v2) {
+    // Radius of the Earth in kilometers
+    constexpr float R = 6371.0;
+
+    // Convert latitude and longitude from degrees to radians
+    double lat1 = v1->getLat() * M_PI / 180.0;
+    double lon1 = v1->getLon() * M_PI / 180.0;
+    double lat2 = v2->getLat() * M_PI / 180.0;
+    double lon2 = v2->getLon() * M_PI / 180.0;
+
+    // Calculate differences in latitude and longitude
+    double dlat = lat2 - lat1;
+    double dlon = lon2 - lon1;
+
+    // Haversine formula to calculate distance
+    double a = sin(dlat / 2) * sin(dlat / 2) +
+               cos(lat1) * cos(lat2) *
+               sin(dlon / 2) * sin(dlon / 2);
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    // Distance in kilometers
+    double distance = R * c;
+    return distance;
+}
+
+
 
 //T2.1 .................................................................................................
 void Application::tspBacktracking() {
@@ -172,14 +200,10 @@ void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, 
         }
     }
 }
-//grafo 1 -> 1.14207e+06
-//execution time 96 milliseconds
 
-//grafo 2 -> 529 203/528 965/2.05874e+06
-//execution time -> 585803/492615/2091 milliseconds -> 8.21 minutes
 //T2.2 .................................................................................................
 void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial on the size of G
-
+    resetGraph();
     auto start = std::chrono::steady_clock::now();
 
     primMST(); // Construct the MST using Prim's algorithm
@@ -208,56 +232,47 @@ void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial 
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 }
 
-int Application::minKey(const std::vector<float>& key, const std::vector<bool>& mstSet) {
-    float min = std::numeric_limits<float>::max();
-    int min_index = -1;
 
-    for (size_t v = 0; v < key.size(); v++) {
-        if (!mstSet[v] && key[v] < min) {
-            min = key[v];
-            min_index = v;
-        }
-    }
-
-    return min_index;
-}
 void Application::primMST() {
-    int n = distanceMatrix.size(); // Number of nodes
-    std::vector<bool> mstSet(n, false); // Visited vertices
-    std::vector<float> key(n, std::numeric_limits<float>::max()); // Lowest edge weight connecting vertex to the MST
-    std::vector<int> parent(n, -1); // Predecessor of vertex in the MST
 
-    key[0] = 0; // Start with vertex 0 as the root
+    int n = distanceMatrix.size();
+    std::vector<bool> mstSet(n, false);
+    std::vector<float> key(n, std::numeric_limits<float>::max());
+    std::vector<int> parent(n, -1);
 
-    // Construct the MST using Prim's algorithm
-    for (int count = 0; count < n - 1; count++) {
-        int u = minKey(key, mstSet); // Get the closest unprocessed node
-        mstSet[u] = true; // Mark vertex u as visited
+    key[0] = 0;
+    std::priority_queue<std::pair<float, int>, std::vector<std::pair<float, int>>, std::greater<std::pair<float, int>>> pq;
 
-        // Update key values and parent pointers for adjacent vertices
+    pq.push({0, 0});
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+
+        if (mstSet[u]) continue;
+        mstSet[u] = true;
+
         for (int v = 0; v < n; v++) {
             if (distanceMatrix[u][v] > 0 && !mstSet[v] && distanceMatrix[u][v] < key[v]) {
-                parent[v] = u; // Update parent of vertex v
-                key[v] = distanceMatrix[u][v]; // Update the key value for vertex v
+                parent[v] = u;
+                key[v] = distanceMatrix[u][v];
+                pq.push({key[v], v});
             }
         }
     }
 
-    // Calculate the total weight of the MST
     float totalMSTWeight = 0.0f;
     for (int i = 1; i < n; i++) {
-        totalMSTWeight += key[i]; // Sum up the key values (MST edge weights)
+        totalMSTWeight += key[i];
     }
 
-    // Construct MST adjacency list for preorder traversal
     mst.resize(n);
     for (int v = 1; v < n; v++) {
         mst[parent[v]].push_back(v);
         mst[v].push_back(parent[v]);
     }
 
-    // Print the total weight of the MST
-    std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;
+    std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;//cool to show
 }
 
 void Application::preorderTraversal(int root, std::vector<bool>& visited) {
@@ -277,7 +292,7 @@ void Application::preorderTraversal(int root, std::vector<bool>& visited) {
 
 //T2.3 - NEAREST NEIGHBOR................................................................................................................
 void Application::tspNearestNeighbor() {
-
+    resetGraph();
     auto start = std::chrono::steady_clock::now();
     int n = distanceMatrix.size();
     int visitedCount = 0;
@@ -338,6 +353,7 @@ void Application::tspNearestNeighbor() {
 
 //T2.3 - CHRISTOFIDES................................................................................................................
 void Application::tspChristofides() {
+    resetGraph();
     auto start = std::chrono::steady_clock::now();
 
     // Step 1: Compute Minimum Spanning Tree (MST)
@@ -434,27 +450,3 @@ void Application::tspRealWorld(int source) {
 
 }
 
-double Application::haversineDistance(Vertex* v1, Vertex* v2) {
-    // Radius of the Earth in kilometers
-    constexpr float R = 6371.0;
-
-    // Convert latitude and longitude from degrees to radians
-    double lat1 = v1->getLat() * M_PI / 180.0;
-    double lon1 = v1->getLon() * M_PI / 180.0;
-    double lat2 = v2->getLat() * M_PI / 180.0;
-    double lon2 = v2->getLon() * M_PI / 180.0;
-
-    // Calculate differences in latitude and longitude
-    double dlat = lat2 - lat1;
-    double dlon = lon2 - lon1;
-
-    // Haversine formula to calculate distance
-    double a = sin(dlat / 2) * sin(dlat / 2) +
-               cos(lat1) * cos(lat2) *
-               sin(dlon / 2) * sin(dlon / 2);
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-
-    // Distance in kilometers
-    double distance = R * c;
-    return distance;
-}

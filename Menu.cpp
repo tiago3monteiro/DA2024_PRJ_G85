@@ -8,6 +8,7 @@
 bool Menu::run() {
     int key = mainMenu();
     if(!key) return false;
+    if(key>8) return false;
     Application app(key);
     while(tspMenu(app));
     return true;

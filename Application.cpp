@@ -142,7 +142,7 @@ double Application::haversineDistance(Vertex* v1, Vertex* v2) {
 
     // Distance in kilometers
     double distance = R * c;
-    return distance;
+    return distance * 1000;
 }
 
 
@@ -506,6 +506,56 @@ void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
 }
 //T2.4................................................................................................................
 void Application::tspRealWorld(int source) {
+    resetGraph();
+    auto start = std::chrono::steady_clock::now();
 
+    int n = distanceMatrix.size();
+    std::vector<int> tour; // store the tour sequence
+    tour.push_back(source); // start from source
+    graph.findVertex(source)->setVisited(true); // mark source as visited
+    int current = source; // initialize the current node to the source
+
+    while (tour.size() < n) { // untill all nodes are visited
+        double minDistance = std::numeric_limits<double>::max();
+        int nextNode = -1; // initialize the next node
+
+        // iterate through all nodes to find the nearest unvisited node
+        for (int i = 0; i < n; ++i) {
+            if (!graph.findVertex(i)->isVisited()) {
+                double distance = distanceMatrix[current][i];
+                if (distance > 0 && distance < minDistance) {
+                    minDistance = distance;
+                    nextNode = i;
+                }
+            }
+        }
+
+        if (nextNode == -1) {
+            std::cout << "No path exists that returns to the origin and visits all nodes." << std::endl;
+            return;
+        }
+
+        // mark next node as visited and add it to the tour
+        graph.findVertex(nextNode)->setVisited(true);
+        tour.push_back(nextNode);
+        current = nextNode;
+    }
+
+    double totalDistance = 0.0;
+    for (size_t i = 0; i < tour.size() - 1; ++i) {
+        totalDistance += distanceMatrix[tour[i]][tour[i + 1]];
+    }
+    totalDistance += distanceMatrix[tour.back()][source];
+
+    std::cout << "TSP Tour Sequence: ";
+    for (int node : tour) {
+        std::cout << node << " -> ";
+    }
+    std::cout << source << std::endl;
+
+    std::cout << "Total Distance: " << totalDistance << std::endl;
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 }
-

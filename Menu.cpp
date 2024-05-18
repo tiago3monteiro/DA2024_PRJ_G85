@@ -78,19 +78,20 @@ bool Menu::tspMenu(Application app) {
         case 4:
             app.tspChristofides();
             break;
-        case 5:
-            app.tspRealWorld(0);
+        case 5: {
+            std::string source;
+            std::cout << "Please enter the source for the real world TSP: ";
+            std::cin >> source;
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            app.tspRealWorld(std::stoi(source));
             break;
+        }
         case 6:
             return false;
         default:
             std::cout << "Not valid!" <<std::endl;
             break;
-
     }
     return true;
-
 }
-
-
-

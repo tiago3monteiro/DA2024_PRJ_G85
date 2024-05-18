@@ -14,6 +14,8 @@
 
 #include <cmath> // For math functions
 Application::Application(int i) {
+    graphType = i;
+
     std::array<std::string, 8> filenames = {
             "../graphs/tourism.csv",
             "../graphs/stadiums.csv",
@@ -210,8 +212,14 @@ void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial 
     std::vector<bool> visited(distanceMatrix.size(), false);
     preorderTraversal(0, visited); // Perform preorder traversal of MST
 
-    //print outcome:
-    std::cout << "TSP Tour Sequence: ";
+    if (graphType == 1 || graphType == 2 || graphType == 3) {
+        std::cout << "TSP Tour Sequence: ";
+        for (size_t i = 0; i < tspTour.size(); i++) {
+            std::cout << tspTour[i] << " -> ";
+        }
+        std::cout << tspTour[0] << std::endl;
+    }
+
     float totalCost = 0.0f;
     for (size_t i = 0; i < tspTour.size(); i++) {
         int current = tspTour[i];
@@ -366,41 +374,16 @@ void Application::tspChristofides() {
             oddVertices.push_back(i);
         }
     }
-    std::vector<int> matching(oddVertices.size(), -1); // Initialize matching array
-    std::vector<bool> used(oddVertices.size(), false); // Track used vertices in the matching
 
-    for (int i = 0; i < oddVertices.size(); ++i) {
-        if (!used[i]) {
-            int closestIndex = -1;
-            double minDistance = std::numeric_limits<double>::max();
-
-            // Find the closest unmatched vertex
-            for (int j = i + 1; j < oddVertices.size(); ++j) {
-                if (!used[j]) {
-                    double distance = distanceMatrix[oddVertices[i]][oddVertices[j]];
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestIndex = j;
-                    }
-                }
-            }
-            // Pair the vertices
-            matching[i] = oddVertices[closestIndex];
-            matching[closestIndex] = oddVertices[i];
-            used[i] = true;
-            used[closestIndex] = true;
-        }
-    }
+    std::vector<std::pair<int, int>> matchingEdges = blossomAlgorithm(oddVertices);
 
     // Step 3: Incorporate the matching edges into the MST
-    for (int i = 0; i < oddVertices.size(); ++i) {
-        if (matching[i] != -1) {
-            int u = oddVertices[i];
-            int v = matching[i];
-            // Add the matching edges to the MST
-            mst[u].push_back(v);
-            mst[v].push_back(u);
-        }
+    for (const auto &edge : matchingEdges) {
+        int u = edge.first;
+        int v = edge.second;
+        // Add the matching edges to the MST
+        mst[u].push_back(v);
+        mst[v].push_back(u);
     }
 
     // Step 4: Construct an Eulerian Circuit from the MST
@@ -434,6 +417,82 @@ void Application::tspChristofides() {
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
+}
+
+std::vector<std::pair<int, int>> Application::blossomAlgorithm(const std::vector<int>& oddVertices) {
+    int n = oddVertices.size(); // Number of odd vertices
+    std::vector<std::pair<int, int>> matchingEdges; // Edges of the perfect matching
+
+    // cost -> Distances between the odd vertices
+    std::vector<std::vector<double>> cost(n, std::vector<double>(n, std::numeric_limits<double>::max()));
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            cost[i][j] = distanceMatrix[oddVertices[i]][oddVertices[j]];
+            cost[j][i] = cost[i][j];
+        }
+    }
+
+    std::vector<int> match(n, -1); // match partner of each odd vertex
+    std::vector<bool> used(n, false); // tracks if vertex is already in the matching
+
+    // loop that iterates over the odd vertices until they are all matched
+    // iteratively finds augmenting paths
+
+    for (int u = 0; u < n; ++u) {
+        if (match[u] == -1) {
+            std::vector<double> minCost(n, std::numeric_limits<double>::max());
+            std::vector<int> prev(n, -1); // stores previous vertex in the path
+            std::vector<bool> inPath(n, false); // tracks if vertex has already been visited in the path
+
+            // double -> cost of reaching a particular vertex
+            // int -> index of that vertex
+            // the priority queue prioritizes elements with the lowest cost
+            std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>, std::greater<std::pair<double, int>>> pq;
+
+            pq.push({0, u});
+            minCost[u] = 0;
+
+            while (!pq.empty()) {
+                int v = pq.top().second;
+                pq.pop();
+
+                if (inPath[v]) continue;
+                inPath[v] = true;
+
+                for (int w = 0; w < n; ++w) {
+                    if (!inPath[w] && cost[v][w] < minCost[w]) {
+                        minCost[w] = cost[v][w];
+                        prev[w] = v;
+                        pq.push({minCost[w], w});
+                    }
+                }
+            }
+
+            int v = -1;
+            for (int w = 0; w < n; ++w) {
+                if (!used[w] && (v == -1 || minCost[w] < minCost[v])) {
+                    v = w;
+                }
+            }
+
+            for (int w = v; w != -1; w = prev[w]) {
+                int prev_w = prev[w];
+                if (prev_w != -1) {
+                    match[w] = prev_w;
+                    match[prev_w] = w;
+                    used[w] = used[prev_w] = true;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        if (match[i] != -1 && i < match[i]) {
+            matchingEdges.push_back({oddVertices[i], oddVertices[match[i]]});
+        }
+    }
+
+    return matchingEdges;
 }
 
 void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {

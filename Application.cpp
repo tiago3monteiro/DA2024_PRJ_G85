@@ -152,22 +152,17 @@ void Application::tspBacktracking() {
 
     auto start = std::chrono::steady_clock::now();
 
-    //setup:
-   // n -> Number of nodes (vertices) in the graph
-   // set all vertex but the source one as unvisited, ans as infinte!
     int n = distanceMatrix.size();
     for(auto vertex: graph.getVertexSet())
         vertex->setVisited(false);
     graph.findVertex(0)->setVisited(true);
     float ans = std::numeric_limits<float>::max();
 
-    //Initiates the recursive TSP (Travelling Salesman Problem):
-    // currPos -> function tsp starting from node 0,
-    // n -> with the total number of nodes,
-    // count -> initial count of visited nodes (1 for the starting node),
-    // initial cost -> (0.0f)
-    // and reference to ans.
-    tspBacktrackingAux(0, n, 1, 0.0f, ans);
+    std::vector<int> path; // to store the current path
+    path.push_back(0); // starting from vertex 0
+
+    tspBacktrackingAux(0, n, 1, 0.0f, ans, path);
+
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -176,33 +171,33 @@ void Application::tspBacktracking() {
 
 }
 
-void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, float& ans) {
+void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, float& ans, std::vector<int>& path) {
 
-    // Base case:
-    //checks if count == n, each means all vertices have been visited
-    //and checks if there's a direct link between the current vertex and vertex 0 (source)
-    //if it does the ans value will be updated IF ans > cost + distanceMatrix[currPos][0]
-    //which means this new hamiltonian cycle has a lower cost then the one previously discovered.
     if (count == n && distanceMatrix[currPos][0] > 0) {
-        ans = std::min(ans, cost + distanceMatrix[currPos][0]);
+        if (cost + distanceMatrix[currPos][0] < ans) {
+            ans = cost + distanceMatrix[currPos][0];
+            path.push_back(0); // add start vertex to complete the tour
+            std::cout << "Tour: ";
+            for (int v : path) {
+                std::cout << v << " ";
+            }
+            std::cout << std::endl;
+            path.pop_back(); // remove the start vertex after printing
+        }
         return;
     }
 
-    // Explore all adjacent nodes (vertices) from the current position (currPos):
-    // we go through all edges of our current vertex to check its destination vertices
-    //if this vertex hasn't been visited yet and exist a direct connection to the next vertex
-    //we will mark it has visited and use recursion but now count -> count +1, cost -> cost + distanceMatrix[currPos][nextVertex]
-   // and then backtracks by marking the destination vertex as unvisited after the recursive call.
     for (auto edge : graph.findVertex(currPos)->getAdj()) {
         int nextVertex = edge->getDest()->getCode();
         if (!edge->getDest()->isVisited() && distanceMatrix[currPos][nextVertex] > 0) {
             edge->getDest()->setVisited(true);
-            tspBacktrackingAux(nextVertex, n, count + 1, cost + distanceMatrix[currPos][nextVertex], ans);
-            edge->getDest()->setVisited(false); //backtrack
+            path.push_back(nextVertex); // add next vertex to the current path
+            tspBacktrackingAux(nextVertex, n, count + 1, cost + distanceMatrix[currPos][nextVertex], ans, path);
+            path.pop_back(); // backtrack
+            edge->getDest()->setVisited(false); // backtrack
         }
     }
 }
-
 //T2.2 .................................................................................................
 void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial on the size of G
     resetGraph();

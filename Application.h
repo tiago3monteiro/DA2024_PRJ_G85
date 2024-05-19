@@ -27,12 +27,13 @@ private:
     std::vector<int> tspTour; // To store the TSP tour sequence
     int graphType;
 
-    void tspBacktrackingAux(int currPos, int n, int count, float cost, float &ans); //auxiliar function for backtracking
+    void tspBacktrackingAux(int currPos, int n, int count, float cost, float &ans, std::vector<int>& path); //auxiliar function for backtracking
     void primMST();
     void preorderTraversal(int root , std::vector<bool> &visited);
     double haversineDistance(Vertex *v1, Vertex *v2);
     std::vector<std::pair<int, int>> blossomAlgorithm(const std::vector<int>& oddVertices);
     void findEulerianCircuit(int u, std::vector<int> &circuit);
+    bool hasHamiltonianCycle();
     void resetGraph();
 
 };

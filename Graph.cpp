@@ -1,7 +1,3 @@
-//
-// Created by tiagomonteiro on 5/7/24.
-//
-
 #include <algorithm>
 #include "Graph.h"
 
@@ -150,15 +146,15 @@ void Vertex::setKey(double key) {
 Edge::Edge(Vertex *orig, Vertex *dest, double capacity) {
     this->orig = orig;
     this->dest = dest;
-    this->capacity = capacity;
+    this->weight = capacity;
 }
 
 Vertex *Edge::getDest() const {
     return this->dest;
 }
 
-double Edge::getCapacity() const {
-    return this->capacity;
+double Edge::getWeight() const {
+    return this->weight;
 }
 
 bool Edge::isSelected() const {
@@ -322,6 +318,3 @@ std::vector<int> Graph::topsort() const {
 
     return res;
 }
-
-
-

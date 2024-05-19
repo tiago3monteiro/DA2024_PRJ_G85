@@ -38,7 +38,7 @@ Application::Application(int i) {
             std::vector<std::string> saved;
             while (std::getline(iss, word, ',')) saved.push_back(word);
             Vertex *sourceVertex = this->graph.findVertex(stoi(saved[0])); //source
-            Vertex *destVertex = this->graph.findVertex(stoi(saved[1])); //destiny
+            Vertex *destVertex = this->graph.findVertex(stoi(saved[1])); //destination
 
             if (sourceVertex == nullptr) { //vertex does not exist yet
                 sourceVertex = new Vertex(stoi(saved[0]));
@@ -91,7 +91,7 @@ Application::Application(int i) {
         }
     }
 
-    //distance matrix:
+    // distance matrix:
     int n = graph.getVertexSet().size();
     visited.resize(n, std::vector<bool>(n, false));
     distanceMatrix.assign(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
@@ -101,8 +101,8 @@ Application::Application(int i) {
     }
     for(auto vertex: graph.getVertexSet()) {
         for (auto edge: vertex->getAdj()) {
-            distanceMatrix[edge->getOrig()->getCode()][edge->getDest()->getCode()] = edge->getCapacity();
-            distanceMatrix[edge->getDest()->getCode()][edge->getOrig()->getCode()] = edge->getCapacity();//reverse
+            distanceMatrix[edge->getOrig()->getCode()][edge->getDest()->getCode()] = edge->getWeight();
+            distanceMatrix[edge->getDest()->getCode()][edge->getOrig()->getCode()] = edge->getWeight();// reverse
 
         }
     }
@@ -314,9 +314,9 @@ void Application::tspNearestNeighbor() {
         double minDistance = std::numeric_limits<double>::max();
 
         for(auto edge: current->getAdj()) { // check adjcent nodes to look for the best local choice
-            if(!edge->getDest()->isVisited() && edge->getCapacity() < minDistance) {
+            if(!edge->getDest()->isVisited() && edge->getWeight() < minDistance) {
                 next = edge->getDest();
-                minDistance = edge->getCapacity();
+                minDistance = edge->getWeight();
                 pathExists = true; // at least one exists!
             }
         }
@@ -342,7 +342,7 @@ void Application::tspNearestNeighbor() {
     bool path = false;
     for(auto edge: current->getAdj()) {
         if(edge->getDest()->getCode() == 0) {
-            totalDistance += edge->getCapacity();
+            totalDistance += edge->getWeight();
             path = true;
         }
     }

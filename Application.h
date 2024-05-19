@@ -1,7 +1,3 @@
-//
-// Created by tiagomonteiro on 5/7/24.
-//
-
 #ifndef DA2024_PRJ2_G85__APPLICATION_H
 #define DA2024_PRJ2_G85__APPLICATION_H
 

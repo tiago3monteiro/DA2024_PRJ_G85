@@ -24,7 +24,6 @@ public:
     Vertex *getPred() const;
     double getKey() const;
 
-    //not used
     bool isProcessing() const;
     unsigned int getIndegree() const;
     double getDist() const;
@@ -38,7 +37,6 @@ public:
     void setPred(Vertex *pred);
     void setKey(double key);
 
-    //not used..
     void setProcesssing(bool processing);
     void setIndegree(unsigned int indegree);
     void setDist(double dist);
@@ -50,10 +48,7 @@ public:
     bool operator==(const Vertex& other) const {
         return (this->code == other.code);
     }
-    /*
-    bool operator<(const Vertex& other) const {
-        return (this->key == other.key);
-    }*/
+
 
 
 protected:
@@ -64,7 +59,7 @@ protected:
     bool visited = false;
     Vertex* pred;
     double key;
-    //not used till now
+
     bool processing = false;
     unsigned int indegree;
     double dist = 0;
@@ -78,7 +73,7 @@ public:
     Edge(Vertex *orig, Vertex *dest, double capacity);
 
     Vertex *getDest() const;
-    double getCapacity() const;
+    double getWeight() const;
     bool isSelected() const;
     Vertex * getOrig() const;
     Edge *getReverse() const;
@@ -87,7 +82,7 @@ public:
 
 protected:
     Vertex * dest;
-    double capacity;
+    double weight;
     bool selected = false;
     Vertex *orig;
     Edge *reverse = nullptr;
@@ -96,7 +91,6 @@ protected:
 
 class Graph {
 public:
-   // ~Graph();
     Vertex *findVertex(const int &code) const;
     bool addVertex(Vertex *vertex);
     bool removeVertex(const int code);
@@ -115,8 +109,6 @@ public:
 protected:
     std::vector<Vertex *> vertexSet;
     std::vector<std::vector<float>> distanceMatrix;
-
-
 };
 
 

@@ -1,7 +1,3 @@
-//
-// Created by tiagomonteiro on 5/7/24.
-//
-
 #include "Application.h"
 #include <fstream>
 #include <sstream>
@@ -177,11 +173,6 @@ void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, 
         if (cost + distanceMatrix[currPos][0] < ans) {
             ans = cost + distanceMatrix[currPos][0];
             path.push_back(0); // add start vertex to complete the tour
-            std::cout << "Tour: ";
-            for (int v : path) {
-                std::cout << v << " ";
-            }
-            std::cout << std::endl;
             path.pop_back(); // remove the start vertex after printing
         }
         return;
@@ -200,6 +191,11 @@ void Application::tspBacktrackingAux(int currPos, int n, int count, float cost, 
 }
 //T2.2 .................................................................................................
 void Application::tspTriangular() { //Complexity – O(V+E) so it is polynomial on the size of G
+    if (graphType == 3) {
+        std::cout << "This algorithm cannot be performed on the shipping graph, due to the lack of geographical coordinates." << std::endl;
+        return;
+    }
+
     resetGraph();
     auto start = std::chrono::steady_clock::now();
 
@@ -275,7 +271,7 @@ void Application::primMST() {
         mst[v].push_back(parent[v]);
     }
 
-    std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;//cool to show
+    std::cout << "Total weight of MST: " << totalMSTWeight << std::endl;
 }
 
 void Application::preorderTraversal(int root, std::vector<bool>& visited) {
@@ -295,6 +291,10 @@ void Application::preorderTraversal(int root, std::vector<bool>& visited) {
 
 //T2.3 - NEAREST NEIGHBOR................................................................................................................
 void Application::tspNearestNeighbor() {
+    if (graphType == 3) {
+        std::cout << "This algorithm cannot be performed on the shipping graph, due to the lack of geographical coordinates." << std::endl;
+        return;
+    }
     resetGraph();
     auto start = std::chrono::steady_clock::now();
     int n = distanceMatrix.size();
@@ -304,20 +304,20 @@ void Application::tspNearestNeighbor() {
     std::vector<bool> visited(n, false);
     double totalDistance = 0.0;
 
-    // Start from the first vertex
+    // start from the first vertex
     Vertex* current = graph.findVertex(0);
     current->setVisited(true);
     visitedCount++;
 
-    while (visitedCount < n) { //lets visit all nodes:
+    while (visitedCount < n) { // visit all nodes:
         bool pathExists = false;
         double minDistance = std::numeric_limits<double>::max();
 
-        for(auto edge: current->getAdj()) { //check adjcent nodes to look for the best local choice
+        for(auto edge: current->getAdj()) { // check adjcent nodes to look for the best local choice
             if(!edge->getDest()->isVisited() && edge->getCapacity() < minDistance) {
                 next = edge->getDest();
                 minDistance = edge->getCapacity();
-                pathExists = true; //exists at least one!
+                pathExists = true; // at least one exists!
             }
         }
 
@@ -356,13 +356,15 @@ void Application::tspNearestNeighbor() {
 
 //T2.3 - CHRISTOFIDES................................................................................................................
 void Application::tspChristofides() {
+    if (graphType == 3) {
+        std::cout << "This algorithm cannot be performed on the shipping graph, due to the lack of geographical coordinates." << std::endl;
+        return;
+    }
     resetGraph();
     auto start = std::chrono::steady_clock::now();
 
-    // Step 1: Compute Minimum Spanning Tree (MST)
     primMST();
 
-    // Step 2: Find Minimum Weight Perfect Matching of Odd-Degree Vertices (Not really perfect greedy algorithm)
     std::vector<int> oddVertices;
     for (int i = 0; i < distanceMatrix.size(); ++i) {
         if (mst[i].size() % 2 != 0) { // Check for odd degree vertices
@@ -370,9 +372,10 @@ void Application::tspChristofides() {
         }
     }
 
+    // Minimum weight perfect matching of odd-degree vertices
     std::vector<std::pair<int, int>> matchingEdges = blossomAlgorithm(oddVertices);
 
-    // Step 3: Incorporate the matching edges into the MST
+    // incorporate the matching edges into the MST
     for (const auto &edge : matchingEdges) {
         int u = edge.first;
         int v = edge.second;
@@ -381,11 +384,11 @@ void Application::tspChristofides() {
         mst[v].push_back(u);
     }
 
-    // Step 4: Construct an Eulerian Circuit from the MST
+    // construct an Eulerian circuit from the MST
     std::vector<int> eulerianCircuit;
     findEulerianCircuit(0, eulerianCircuit);
 
-    // Step 5: Convert the Eulerian Circuit into a Hamiltonian Circuit (TSP Tour)
+    // convert the Eulerian circuit into a Hamiltonian circuit (TSP Tour)
     std::vector<bool> visited(distanceMatrix.size(), false);
     tspTour.clear();
     for (int vertex : eulerianCircuit) {
@@ -395,9 +398,9 @@ void Application::tspChristofides() {
         }
     }
 
-    tspTour.push_back(eulerianCircuit.front()); // Complete the Hamiltonian circuit
+    tspTour.push_back(eulerianCircuit.front()); // complete the Hamiltonian circuit
 
-    // Step 6: Calculate the total cost of the TSP Tour
+    // calculate the total cost of the TSP Tour
     float totalCost = 0.0f;
     for (size_t i = 0; i < tspTour.size() - 1; ++i) {
         int current = tspTour[i];
@@ -526,7 +529,7 @@ void Application::tspRealWorld(int source) {
         }
 
         if (nextNode == -1) {
-            std::cout << "No path exists that returns to the origin and visits all nodes." << std::endl;
+            std::cout << "The algorithm could not find a Hamiltonian cycle." << std::endl;
             return;
         }
 

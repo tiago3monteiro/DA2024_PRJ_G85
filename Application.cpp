@@ -518,131 +518,83 @@ void Application::tspRealWorld(int source) {
     resetGraph();
     auto start = std::chrono::steady_clock::now();
 
-    // Step 1: Check Graph Connectivity
-    if (!isGraphConnected(source)) {
-        std::cout << "No path exists to cover all nodes from the source." << std::endl;
-        return;
+    auto shortestPaths = computeShortestPaths();
+    int n = shortestPaths.size();
+
+    std::vector<int> tour;
+    std::vector<bool> visited(n, false);
+
+    tour.push_back(source);
+    visited[source] = true;
+    int current = source;
+
+    while (tour.size() < n) {
+        double minDistance = std::numeric_limits<double>::max();
+        int nextNode = -1;
+
+        for (int i = 0; i < n; ++i) {
+            if (!visited[i] && shortestPaths[current][i] < minDistance) {
+                minDistance = shortestPaths[current][i];
+                nextNode = i;
+            }
+        }
+
+        if (nextNode == -1) {
+            std::cout << "No path exists that returns to the origin and visits all nodes." << std::endl;
+            return;
+        }
+
+        visited[nextNode] = true;
+        tour.push_back(nextNode);
+        current = nextNode;
     }
 
-    // Step 2: Use the original distances for TSP approximation
-    int n = graph.getVertexSet().size();
-    std::vector<std::vector<float>> distances = createDistanceMatrix(n);
+    double totalDistance = 0.0;
+    for (size_t i = 0; i < tour.size() - 1; ++i) {
+        totalDistance += shortestPaths[tour[i]][tour[i + 1]];
+    }
+    totalDistance += shortestPaths[tour.back()][source];
 
-    // Step 3: Find an approximate TSP tour using Nearest Neighbor algorithm as an example
-    float totalCost = tspApproximate(distances, source);
+    std::cout << "TSP Tour Sequence: ";
+    for (int node : tour) {
+        std::cout << node << " -> ";
+    }
+    std::cout << source << std::endl;
 
-    // Output results
-    std::cout << "Total distance of TSP tour: " << totalCost << " units" << std::endl;
+    std::cout << "Total Distance: " << totalDistance << " units" << std::endl;
+
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
 }
 
-// Helper function to check if the graph is connected
-bool Application::isGraphConnected(int source) {
-    std::vector<bool> visited(graph.getVertexSet().size(), false);
-    std::queue<int> q;
-    q.push(source);
-    visited[source] = true;
-    int count = 1;
+std::vector<std::vector<double>> Application::computeShortestPaths() {
+    int n = graph.getVertexSet().size();
+    std::vector<std::vector<double>> shortestPaths(n, std::vector<double>(n, std::numeric_limits<double>::infinity()));
 
-    while (!q.empty()) {
-        int v = q.front();
-        q.pop();
-        for (auto edge : graph.findVertex(v)->getAdj()) {
-            int neighbor = edge->getDest()->getCode();
-            if (!visited[neighbor]) {
-                visited[neighbor] = true;
-                q.push(neighbor);
-                count++;
-            }
-        }
-    }
-    return count == graph.getVertexSet().size();
-}
+    for (auto source : graph.getVertexSet()) {
+        int src = source->getCode();
+        shortestPaths[src][src] = 0;
+        std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>, std::greater<std::pair<double, int>>> pq;
+        pq.push({0, src});
 
-// Floyd-Warshall algorithm to compute shortest paths between all pairs of vertices
-std::vector<std::vector<float>> Application::floydWarshall(int n) {
-    std::vector<std::vector<float>> dist = distanceMatrix;
-    for (int k = 0; k < n; ++k) {
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                if (dist[i][k] < std::numeric_limits<float>::infinity() &&
-                    dist[k][j] < std::numeric_limits<float>::infinity() &&
-                    dist[i][k] + dist[k][j] < dist[i][j]) {
-                    dist[i][j] = dist[i][k] + dist[k][j];
+        while (!pq.empty()) {
+            double dist = pq.top().first;
+            int u = pq.top().second;
+            pq.pop();
+
+            if (dist > shortestPaths[src][u]) continue;
+
+            for (auto edge : source->getAdj()) {
+                int v = edge->getDest()->getCode();
+                double weight = edge->getCapacity();
+
+                if (shortestPaths[src][u] + weight < shortestPaths[src][v]) {
+                    shortestPaths[src][v] = shortestPaths[src][u] + weight;
+                    pq.push({shortestPaths[src][v], v});
                 }
             }
         }
     }
-    return dist;
-}
-
-// Approximate TSP solution using a modified nearest neighbor algorithm
-float Application::tspApproximate(const std::vector<std::vector<float>>& distances, int source) {
-    int n = distances.size();
-    std::vector<bool> visited(n, false);
-    std::vector<int> tour;
-    float totalDistance = 0.0f;
-
-    int current = source;
-    tour.push_back(current);
-    visited[current] = true;
-
-    std::cout << "Distances between each pair of vertices in the TSP path:" << std::endl;
-
-    while (tour.size() < n) {
-        int next = -1;
-        float minDist = std::numeric_limits<float>::infinity();
-        for (int i = 0; i < n; ++i) {
-            if (!visited[i] && distances[current][i] < minDist) {
-                next = i;
-                minDist = distances[current][i];
-            }
-        }
-        if (next == -1) break;  // No further nodes are reachable
-        tour.push_back(next);
-        visited[next] = true;
-        totalDistance += minDist;
-        std::cout << "Distance from " << current << " to " << next << ": " << minDist << std::endl;
-        current = next;
-    }
-
-    // Return to the source
-    if (distances[current][source] < std::numeric_limits<float>::infinity()) {
-        float returnDistance = distances[current][source];
-        totalDistance += returnDistance;
-        std::cout << "Distance from " << current << " to " << source << ": " << returnDistance << std::endl;
-        tour.push_back(source);
-    } else {
-        std::cout << "No path exists to return to the source." << std::endl;
-    }
-
-    // Optionally print the tour sequence
-    std::cout << "TSP Tour Sequence: ";
-    for (size_t i = 0; i < tour.size(); ++i) {
-        std::cout << tour[i] << (i == tour.size() - 1 ? "" : " -> ");
-    }
-    std::cout << std::endl;
-
-    return totalDistance;
-}
-
-std::vector<std::vector<float>> Application::createDistanceMatrix(int n) {
-    std::vector<std::vector<float>> dist(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
-
-    for (int i = 0; i < n; ++i) {
-        dist[i][i] = 0;
-    }
-
-    for (const auto& vertex : graph.getVertexSet()) {
-        int u = vertex->getCode();
-        for (const auto& edge : vertex->getAdj()) {
-            int v = edge->getDest()->getCode();
-            float weight = edge->getCapacity();
-            dist[u][v] = weight;
-        }
-    }
-
-    return dist;
+    return shortestPaths;
 }

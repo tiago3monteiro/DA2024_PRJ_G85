@@ -33,10 +33,7 @@ private:
     double haversineDistance(Vertex *v1, Vertex *v2);
     std::vector<std::pair<int, int>> blossomAlgorithm(const std::vector<int>& oddVertices);
     void findEulerianCircuit(int u, std::vector<int> &circuit);
-    bool isGraphConnected(int source);
-    std::vector<std::vector<float>> floydWarshall(int n);
-    float tspApproximate(const std::vector<std::vector<float>>& shortestPaths, int source);
-    std::vector<std::vector<float>> createDistanceMatrix(int n);
+    std::vector<std::vector<double>> computeShortestPaths();
     void resetGraph();
 
 };

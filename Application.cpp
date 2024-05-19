@@ -533,16 +533,31 @@ void Application::tspRealWorld(int source) {
     // Step 3: Apply a TSP solver on the transformed graph
     std::vector<int> tour = nearestNeighborTSP(transformedMatrix, source);
 
+    std::cout << "Tour from nearestNeighborTSP: ";
+    for (int v : tour) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
     float totalCost = 0.0f;
     std::vector<int> finalTour;
     for (size_t i = 0; i < tour.size() - 1; ++i) {
         int current = tour[i];
         int next = tour[i + 1];
         auto path = getPath(current, next, pred);
-        finalTour.insert(finalTour.end(), path.begin(), path.end());
+        std::reverse(path.begin(), path.end());
+
+        std::cout << "Path from " << current << " to " << next << ": ";
+        for (int vertex : path) {
+            std::cout << vertex << " ";
+        }
+        std::cout << std::endl;
+
+        // Avoid inserting the common node between consecutive paths
+        finalTour.insert(finalTour.end(), path.begin() + 1, path.end());
         totalCost += transformedMatrix[current][next];
     }
-    finalTour.push_back(source); // Complete the tour
+    finalTour.insert(finalTour.begin(), source); // Complete the tour
 
     // Print the final tour and cost
     std::cout << "Final TSP Tour: ";
@@ -624,7 +639,7 @@ std::vector<int> Application::getPath(int u, int v, std::vector<std::vector<int>
     std::vector<int> path;
 
     if (pred[u][v] == -1) {
-        return path;
+        return {};
     }
 
     path.push_back(v);

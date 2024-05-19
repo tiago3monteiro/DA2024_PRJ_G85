@@ -515,4 +515,124 @@ void Application::findEulerianCircuit(int u, std::vector<int>& circuit) {
 }
 //T2.4................................................................................................................
 void Application::tspRealWorld(int source) {
+    auto start = std::chrono::steady_clock::now();
+
+    // Step 1: Compute Shortest Paths using Floyd-Warshall
+    std::vector<std::vector<int>> pred = floydWarshall();
+
+    // Step 2: Create a new graph using the shortest path distances
+    int n = distanceMatrix.size();
+    std::vector<std::vector<float>> transformedMatrix(n, std::vector<float>(n, std::numeric_limits<float>::infinity()));
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            transformedMatrix[i][j] = distanceMatrix[i][j];
+        }
+    }
+
+    // Step 3: Apply a TSP solver on the transformed graph
+    std::vector<int> tour = nearestNeighborTSP(transformedMatrix, source);
+
+    float totalCost = 0.0f;
+    std::vector<int> finalTour;
+    for (size_t i = 0; i < tour.size() - 1; ++i) {
+        int current = tour[i];
+        int next = tour[i + 1];
+        auto path = getPath(current, next, pred);
+        finalTour.insert(finalTour.end(), path.begin(), path.end());
+        totalCost += transformedMatrix[current][next];
+    }
+    finalTour.push_back(source); // Complete the tour
+
+    // Print the final tour and cost
+    std::cout << "Final TSP Tour: ";
+    for (int v : finalTour) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Total Cost: " << totalCost << std::endl;
+
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " milliseconds" << std::endl;
+}
+
+std::vector<std::vector<int>> Application::floydWarshall() {
+    std::vector<std::vector<float>> shortestMatrix = distanceMatrix;
+    int n = shortestMatrix.size();
+    std::vector<std::vector<int>> pred;
+    pred.resize(n, std::vector<int>(n, -1));
+
+    for (auto v : graph.getVertexSet()) {
+        for (auto e : v->getAdj()) {
+            pred[v->getCode()][e->getDest()->getCode()] = v->getCode();
+        }
+        pred[v->getCode()][v->getCode()] = v->getCode();
+    }
+
+    for (int k = 0; k < n; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (shortestMatrix[i][k] < std::numeric_limits<float>::infinity() &&
+                    shortestMatrix[k][j] < std::numeric_limits<float>::infinity()) {
+                    if (shortestMatrix[i][j] > shortestMatrix[i][k] + shortestMatrix[k][j]) {
+                        shortestMatrix[i][j] = shortestMatrix[i][k] + shortestMatrix[k][j];
+                        pred[i][j] = pred[k][j];
+                    }
+                }
+            }
+        }
+    }
+
+    return pred;
+}
+
+std::vector<int> Application::nearestNeighborTSP(const std::vector<std::vector<float>>& matrix, int start) {
+    int n = matrix.size();
+    std::vector<bool> visited(n, false);
+    std::vector<int> tour;
+    int current = start;
+    visited[current] = true;
+    tour.push_back(current);
+
+    for (int i = 1; i < n; ++i) {
+        int next = -1;
+        float minDistance = std::numeric_limits<float>::infinity();
+
+        for (int j = 0; j < n; ++j) {
+            if (!visited[j] && matrix[current][j] < minDistance) {
+                next = j;
+                minDistance = matrix[current][j];
+            }
+        }
+
+        if (next == -1) {
+            // No valid next step found
+            return std::vector<int>();
+        }
+
+        current = next;
+        visited[current] = true;
+        tour.push_back(current);
+    }
+    tour.push_back(start); // Return to the starting point
+    return tour;
+}
+
+std::vector<int> Application::getPath(int u, int v, std::vector<std::vector<int>> pred) {
+    // Reconstruct the shortest path from u to v using Floyd-Warshall results
+    std::vector<int> path;
+
+    if (pred[u][v] == -1) {
+        return path;
+    }
+
+    path.push_back(v);
+
+    while (u != v) {
+        v = pred[u][v];
+        path.push_back(v);
+    }
+
+    return path;
 }

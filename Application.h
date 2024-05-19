@@ -33,7 +33,9 @@ private:
     double haversineDistance(Vertex *v1, Vertex *v2);
     std::vector<std::pair<int, int>> blossomAlgorithm(const std::vector<int>& oddVertices);
     void findEulerianCircuit(int u, std::vector<int> &circuit);
-    std::vector<std::vector<double>> computeShortestPaths();
+    std::vector<std::vector<int>> floydWarshall();
+    std::vector<int> nearestNeighborTSP(const std::vector<std::vector<float>>& matrix, int start);
+    std::vector<int> getPath(int u, int v, std::vector<std::vector<int>> pred);
     void resetGraph();
 
 };
